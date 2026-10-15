@@ -1,110 +1,277 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Miniature Schnauzer</title>
-<style>html,body{margin:0;height:100%;overflow:hidden;background:#cfe3ea;font-family:system-ui,sans-serif}
-#h{position:fixed;left:0;right:0;bottom:14px;text-align:center;color:#3b4f57;font-size:13px;pointer-events:none}</style>
-<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script></head>
-<body><div id="h">Drag to orbit · scroll to zoom</div>
-<script type="module">
-import * as THREE from 'three';
-import {OrbitControls} from './vendor/OrbitControls.js';
-const r=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
-r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(innerWidth,innerHeight);
-r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
-r.toneMapping=THREE.ACESFilmicToneMapping;r.outputColorSpace=THREE.SRGBColorSpace;
-document.body.appendChild(r.domElement);
-const scene=new THREE.Scene();
-// gradient bg
-const c=document.createElement('canvas');c.width=2;c.height=256;const g=c.getContext('2d');
-const gr=g.createLinearGradient(0,0,0,256);gr.addColorStop(0,'#e9f4f7');gr.addColorStop(1,'#b9d4dc');g.fillStyle=gr;g.fillRect(0,0,2,256);
-const bg=new THREE.CanvasTexture(c);bg.colorSpace=THREE.SRGBColorSpace;scene.background=bg;
-const cam=new THREE.PerspectiveCamera(40,innerWidth/innerHeight,.1,100);cam.position.set(4.6,2.6,5.6);
-const ctl=new OrbitControls(cam,r.domElement);ctl.target.set(0,1.3,0);ctl.enableDamping=true;ctl.maxPolarAngle=Math.PI*.49;ctl.minDistance=3;ctl.maxDistance=12;
-scene.add(new THREE.HemisphereLight(0xffffff,0x9db8a0,1.0));
-const sun=new THREE.DirectionalLight(0xfff2dd,2.4);sun.position.set(4,8,5);sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-5,right:5,top:5,bottom:-5,near:1,far:25});sun.shadow.radius=5;sun.shadow.bias=-.0005;scene.add(sun);
-const rim=new THREE.DirectionalLight(0xbfdcff,1);rim.position.set(-5,3,-4);scene.add(rim);
-// ground
-const ground=new THREE.Mesh(new THREE.CircleGeometry(6,64),new THREE.MeshStandardMaterial({color:0xa9cf9a,roughness:1}));
-ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
-const ring=new THREE.Mesh(new THREE.RingGeometry(5.9,6,64),new THREE.MeshBasicMaterial({color:0x8fb882}));ring.rotation.x=-Math.PI/2;ring.position.y=.002;scene.add(ring);
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f1eee7">
+  <meta name="description" content="Meet Otto, a little salt-and-pepper schnauzer. An interactive 3D sculpture with a very distinguished beard.">
+  <title>Otto — Little Companions</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%233d5146'/%3E%3Cpath d='M15 19 25 24 39 24 49 19 44 39 38 49 26 49 20 39Z' fill='%23d6d8d0'/%3E%3Cpath d='M24 34 40 34 36 41 28 41Z' fill='%23232926'/%3E%3C/svg%3E">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+  <style>
+    :root { color-scheme:light; --paper:#f1eee7; --ink:#293b31; --muted:#6b7168; --line:#d8d9cf; }
+    * { box-sizing:border-box; }
+    html, body { margin:0; width:100%; height:100%; }
+    body { background:var(--paper); color:var(--ink); font-family:Arial,Helvetica,sans-serif; overflow:hidden; }
+    button, a { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    button { font:inherit; color:inherit; cursor:pointer; }
+    button:disabled { cursor:wait; opacity:.45; }
+    button:focus-visible, a:focus-visible, canvas:focus-visible { outline:2px solid #607b65; outline-offset:5px; }
+    header { position:absolute; z-index:3; inset:0 0 auto; padding:32px 4.3%; display:flex; align-items:center; justify-content:space-between; }
+    .brand { display:flex; align-items:center; gap:12px; font-size:15px; letter-spacing:-.3px; }
+    .brand svg { width:32px; height:32px; }
+    .edition { font-size:10px; text-transform:uppercase; letter-spacing:2.2px; color:var(--muted); }
+    main { height:100%; }
+    .intro { position:absolute; left:6.8%; top:36%; z-index:2; width:27%; pointer-events:none; }
+    .eyebrow { display:flex; gap:8px; align-items:center; font-size:10px; font-weight:500; letter-spacing:2px; text-transform:uppercase; }
+    .dot { width:6px; height:6px; border-radius:100%; background:#7f9474; display:inline-block; }
+    h1 { font-family:Georgia,'Times New Roman',serif; font-size:clamp(72px,8.8vw,132px); font-weight:400; letter-spacing:-6px; line-height:1.05; margin:15px 0 18px; }
+    .intro p { max-width:235px; color:var(--muted); font-size:14px; line-height:1.8; margin:0; }
+    .breed { margin-top:29px; padding-top:18px; border-top:1px solid var(--line); display:inline-flex; gap:11px; align-items:center; color:#566250; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; }
+    .breed span:first-child { color:#9aa18e; font-size:13px; }
+    #stage { position:absolute; inset:84px 1.5% 90px 28%; }
+    canvas { display:block; width:100%; height:100%; touch-action:none; }
+    .view-label { position:absolute; bottom:12px; width:100%; text-align:center; font-size:10px; color:#8a8e82; letter-spacing:1.8px; text-transform:uppercase; pointer-events:none; }
+    .status { position:absolute; z-index:2; top:50%; left:50%; transform:translate(-50%,-50%); border:1px solid var(--line); border-radius:14px; background:#f8f6f1ee; padding:16px 22px; color:var(--muted); font-size:13px; text-align:center; max-width:min(90%,380px); line-height:1.6; }
+    .status[hidden] { display:none; }
+    .status.error { color:#8a3f2d; border-color:#ddc3b8; }
+    .status strong { display:block; color:var(--ink); margin-bottom:5px; }
+    .status a { color:inherit; text-underline-offset:3px; }
+    .spinner { display:inline-block; width:11px; height:11px; margin-right:8px; border:1px solid #b6c0ac; border-top-color:#3d5146; border-radius:50%; animation:spin 1s linear infinite; vertical-align:-1px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    footer { position:absolute; z-index:3; inset:auto 0 0; padding:23px 4.3% 26px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:20px; }
+    .instructions { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:11px; line-height:1.8; }
+    .instructions svg { width:18px; height:18px; flex-shrink:0; }
+    .controls { display:flex; align-items:center; padding:5px; border:1px solid #d7dacd; border-radius:30px; background:#f8f7f0c9; }
+    .controls button { border:0; background:transparent; display:flex; align-items:center; gap:7px; font-size:11px; padding:11px 16px; border-radius:24px; white-space:nowrap; transition:background .2s; }
+    .controls button:hover:enabled { background:#e4e8dc; }
+    .separator { background:#d7dacd; width:1px; height:17px; }
+    .controls svg, .download svg { height:14px; width:14px; }
+    .download { justify-self:end; color:var(--ink); text-decoration:none; display:flex; gap:8px; align-items:center; font-size:11px; padding:10px 0 10px 10px; }
+    .download:hover { text-decoration:underline; text-underline-offset:4px; }
+    .download small { color:var(--muted); font-size:9px; letter-spacing:.6px; }
+    noscript { position:fixed; z-index:10; inset:40% 20% auto; padding:24px; background:#f8f6f1; border:1px solid var(--line); text-align:center; }
+    @media (min-width:1700px) { .intro { left:10%; } #stage { right:5%; } }
+    @media (max-width:760px) {
+      header { padding:23px 6%; } .brand { font-size:13px; gap:8px; } .brand svg { width:28px; height:28px; } .edition { font-size:9px; letter-spacing:1.2px; }
+      .intro { top:107px; left:8%; width:84%; } h1 { font-size:67px; letter-spacing:-3px; margin:7px 0 6px; }
+      .intro p { font-size:12px; max-width:270px; line-height:1.6; } .breed { display:none; } .eyebrow { font-size:9px; }
+      #stage { inset:220px 0 121px; } .view-label { bottom:0; font-size:8px; }
+      footer { grid-template-columns:1fr 1fr; gap:10px; padding:10px 6% 18px; }
+      .controls { grid-column:1/-1; grid-row:1; justify-self:center; }
+      .instructions { font-size:9px; gap:6px; } .instructions svg { width:14px; height:14px; }
+      .download { font-size:10px; } .download small { display:none; }
+    }
+    @media (max-height:650px) and (min-width:761px) {
+      header { padding-top:20px; } .intro { top:29%; } h1 { font-size:83px; } #stage { top:60px; bottom:70px; } footer { padding-bottom:15px; }
+    }
+    @media (max-height:700px) and (max-width:760px) {
+      .intro { top:83px; } h1 { font-size:51px; } .intro p { display:none; } #stage { top:160px; bottom:111px; } footer { padding-bottom:12px; }
+    }
+    @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+  </style>
+</head>
+<body data-state="loading">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M8 11 13 14H23L28 11 26 24 21 29H15L10 24Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 16 16 17M20 17 24 16M15 22H21L18 25Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 26 15 30M18 27V31M22 26 21 30" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span>little companions</span>
+    </div>
+    <span class="edition">A study in small things · No. 01</span>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <div class="eyebrow"><span class="dot"></span> Small dog. Big personality.</div>
+      <h1 id="title">Meet Otto.</h1>
+      <p>A distinguished little gentleman.<br>Salt, pepper, and a very good beard.</p>
+      <div class="breed"><span>01</span> Miniature schnauzer</div>
+    </section>
+    <div id="stage" aria-label="Interactive 3D miniature schnauzer">
+      <div id="status" class="status" role="status" aria-live="polite"><span class="spinner"></span>Getting Otto ready…</div>
+      <span class="view-label">Made to be seen from every side</span>
+    </div>
+  </main>
+  <footer>
+    <div class="instructions"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 4-4 4 4 4M4 8h11a5 5 0 0 1 5 5v4m-4 3 4-4 4 4" transform="translate(-2 0)" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Drag to orbit · Scroll to zoom</span></div>
+    <div class="controls" aria-label="Viewer controls">
+      <button id="motion" type="button" aria-pressed="true" disabled><svg id="motion-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3h2v10H4zM10 3h2v10h-2z"/></svg><span id="motion-label">Pause motion</span></button>
+      <span class="separator" aria-hidden="true"></span>
+      <button id="reset" type="button" disabled><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 6a5 5 0 1 1 0 5M3 2v4h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Reset view</button>
+    </div>
+    <a class="download" href="./schnauzer.glb" download="otto-schnauzer.glb"><svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8M5 7l3 3 3-3M3 11v3h10v-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Take Otto home <small>.GLB</small></a>
+  </footer>
+  <noscript>Please enable JavaScript to explore Otto in 3D.</noscript>
+  <script type="module">
+    const stage = document.getElementById('stage');
+    const status = document.getElementById('status');
+    const motionButton = document.getElementById('motion');
+    const resetButton = document.getElementById('reset');
 
-const M=(col,rough=.9)=>new THREE.MeshStandardMaterial({color:col,roughness:rough,flatShading:true});
-const grey=M(0x7d8185),dark=M(0x45484c),light=M(0xc9ccce),cream=M(0xe6e3dc),black=M(0x111111,.3),nose=M(0x151515,.35);
-function mesh(geo,mat,p=[0,0,0],s=[1,1,1],rot=[0,0,0],parent){
- const m=new THREE.Mesh(geo,mat);m.position.set(...p);m.scale.set(...s);m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;if(parent)parent.add(m);return m;}
-const sph=new THREE.IcosahedronGeometry(1,1), box=new THREE.BoxGeometry(1,1,1), cyl=new THREE.CylinderGeometry(1,1,1,8), cone=new THREE.ConeGeometry(1,1,6);
-const dog=new THREE.Group();scene.add(dog);
-// body (along z, front = +z)
-const body=new THREE.Group();dog.add(body);
-mesh(sph,grey,[0,1.35,0],[.78,.8,1.25],[0,0,0],body);
-mesh(sph,dark,[0,1.7,-.1],[.6,.4,1.0],[0,0,0],body); // darker back saddle
-mesh(sph,light,[0,1.0,.55],[.6,.55,.6],[0,0,0],body); // chest
-mesh(sph,light,[0,1.05,-.2],[.62,.4,.9],[0,0,0],body);
-// legs
-const legs=[];
-function leg(x,z,front){
- const g=new THREE.Group();g.position.set(x,1.1,z);dog.add(g);
- mesh(cyl,light,[0,-.55,0],[.17,.9,.17],[0,0,0],g);
- mesh(sph,cream,[0,-1.03,.08],[.24,.1,.32],[0,0,0],g);
- mesh(sph,light,[0,-.15,0],[.26,.3,.26],[0,0,0],g);
- legs.push(g);return g;}
-leg(.38,.7,1);leg(-.38,.7,1);leg(.38,-.65);leg(-.38,-.65);
-// tail (docked)
-const tail=new THREE.Group();tail.position.set(0,1.8,-1.25);body.add(tail);
-mesh(cyl,grey,[0,.3,0],[.12,.6,.12],[0,0,0],tail);
-mesh(sph,dark,[0,.6,0],[.13,.13,.13],[0,0,0],tail);
-tail.rotation.x=-.25;
-// neck
-mesh(cyl,grey,[0,1.85,.9],[.33,.5,.33],[.6,0,0],dog);
-// head
-const head=new THREE.Group();head.position.set(0,2.3,1.2);dog.add(head);
-mesh(sph,grey,[0,0,0],[.5,.45,.55],[0,0,0],head);
-mesh(new THREE.BoxGeometry(1,1,1,2,2,2),dark,[0,.3,-.05],[.5,.1,.5],[0,0,0],head);
-// muzzle & beard
-mesh(box,cream,[0,-.12,.62],[.46,.34,.6],[0,0,0],head);
-mesh(sph,cream,[0,-.12,.62],[.3,.2,.4],[0,0,0],head);
-mesh(sph,cream,[0,-.42,.62],[.34,.36,.45],[.35,0,0],head); // beard
-mesh(sph,cream,[.17,-.27,.88],[.2,.14,.2],[0,0,0],head);
-mesh(sph,cream,[-.17,-.27,.88],[.2,.14,.2],[0,0,0],head); // moustache
-mesh(sph,cream,[0,-.55,.5],[.22,.3,.25],[0,0,0],head);
-mesh(sph,nose,[0,.07,.95],[.14,.1,.11],[0,0,0],head);
-// eyebrows
-for(const s of[1,-1]){
- mesh(sph,cream,[s*.2,.2,.5],[.2,.1,.3],[-.3,s*.2,s*-.25],head);
- mesh(sph,light,[s*.2,.22,.65],[.17,.08,.2],[-.3,0,s*-.2],head);
-}
-// eyes
-const eyes=[];
-for(const s of[1,-1]){
- const e=mesh(sph,black,[s*.2,.06,.52],[.06,.07,.05],[0,0,0],head);eyes.push(e);
- mesh(sph,M(0xffffff,.2),[s*.21,.085,.56],[.018,.018,.018],[0,0,0],head);
-}
-// ears (folded forward flaps)
-const ears=[];
-for(const s of[1,-1]){
- const eg=new THREE.Group();eg.position.set(s*.3,.34,.02);head.add(eg);
- mesh(sph,dark,[s*.06,0,.1],[.2,.06,.22],[.5,0,s*-.5],eg);
- mesh(sph,grey,[s*.1,-.05,.17],[.17,.05,.17],[.7,0,s*-.7],eg);
- ears.push(eg);
-}
-dog.position.y=0;
-// stray whisker puffs on cheeks
-for(const s of[1,-1])mesh(sph,light,[s*.38,-.1,.2],[.14,.2,.25],[0,0,0],head);
+    function showError(error) {
+      console.error('Otto viewer:', error);
+      document.body.dataset.state = 'error';
+      status.hidden = false;
+      status.classList.add('error');
+      status.setAttribute('role', 'alert');
+      status.replaceChildren();
+      const title = document.createElement('strong');
+      title.textContent = 'Otto couldn’t load.';
+      const message = document.createElement('span');
+      message.textContent = 'Please check that WebGL is available and schnauzer.glb is beside this page, then ';
+      const retry = document.createElement('a');
+      retry.href = './';
+      retry.textContent = 'try again';
+      status.append(title, message, retry, '.');
+      motionButton.disabled = resetButton.disabled = true;
+    }
 
-// animation
-let nextBlink=2,blink=0;const clock=new THREE.Clock();
-function loop(){
- const t=clock.getElapsedTime();
- head.position.y=2.3+Math.sin(t*2)*.04;head.rotation.x=Math.sin(t*2)*.04;head.rotation.y=Math.sin(t*.7)*.12;head.rotation.z=Math.sin(t*.9)*.04;
- tail.rotation.z=Math.sin(t*9)*.45;
- body.position.y=Math.sin(t*2)*.012;
- ears.forEach((e,i)=>e.rotation.x=Math.sin(t*2+i)*.03);
- if(t>nextBlink&&!blink){blink=t;}
- let k=1;if(blink){const d=(t-blink)/.16;if(d>=1){blink=0;nextBlink=t+2+Math.random()*3}else k=Math.max(.08,Math.abs(d*2-1));}
- eyes.forEach(e=>e.scale.y=.07*k);
- ctl.update();r.render(scene,cam);requestAnimationFrame(loop);
-}
-loop();
-addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();r.setSize(innerWidth,innerHeight)});
-</script></body></html>
+    // Catch missing vendor files as well as renderer or model-loading failures.
+    try {
+      const [THREE, { OrbitControls }, { GLTFLoader }] = await Promise.all([
+        import('three'), import('./vendor/OrbitControls.js'), import('./vendor/GLTFLoader.js')
+      ]);
+      const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      renderer.domElement.setAttribute('aria-label', 'Otto, a salt-and-pepper miniature schnauzer. Drag or use Shift plus arrow keys to rotate.');
+      renderer.domElement.tabIndex = 0;
+      stage.prepend(renderer.domElement);
+      renderer.domElement.addEventListener('webglcontextlost', event => {
+        event.preventDefault();
+        showError(new Error('WebGL context lost. Reload to restore the viewer.'));
+      });
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0xf1eee7, 10, 27);
+      const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 60);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.065;
+      controls.minDistance = 3.7;
+      controls.maxDistance = 13;
+      controls.maxPolarAngle = Math.PI * 0.485;
+      controls.minPolarAngle = 0.2;
+      controls.enablePan = false;
+      controls.listenToKeyEvents(renderer.domElement);
+
+      scene.add(new THREE.HemisphereLight(0xfffbef, 0x8e9b85, 2.1));
+      const key = new THREE.DirectionalLight(0xfff2dc, 3.3);
+      key.position.set(-3.5, 7, 5);
+      key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048);
+      Object.assign(key.shadow.camera, { left:-3.5, right:3.5, top:4, bottom:-3, near:0.5, far:16 });
+      key.shadow.normalBias = 0.025;
+      key.shadow.bias = -0.0002;
+      key.shadow.radius = 3;
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0xdce9ff, 1.3);
+      fill.position.set(4, 3, 2);
+      scene.add(fill);
+      const rim = new THREE.DirectionalLight(0xfff5df, 2.5);
+      rim.position.set(1, 5, -4);
+      scene.add(rim);
+
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ color:0x494d3e, opacity:0.15 }));
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = -0.075;
+      ground.receiveShadow = true;
+      scene.add(ground);
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.97, 2.01, 0.07, 96), new THREE.MeshStandardMaterial({ color:0xe0e1d4, roughness:0.95 }));
+      plinth.position.y = -0.035;
+      plinth.receiveShadow = plinth.castShadow = true;
+      scene.add(plinth);
+
+      // This contact-shadow texture is made locally; it makes no network requests.
+      const shadowCanvas = document.createElement('canvas');
+      shadowCanvas.width = shadowCanvas.height = 128;
+      const context = shadowCanvas.getContext('2d');
+      const gradient = context.createRadialGradient(64, 64, 4, 64, 64, 64);
+      gradient.addColorStop(0, 'rgba(46,54,37,0.22)');
+      gradient.addColorStop(0.5, 'rgba(46,54,37,0.12)');
+      gradient.addColorStop(1, 'rgba(46,54,37,0)');
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, 128, 128);
+      const contact = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 2.9), new THREE.MeshBasicMaterial({ map:new THREE.CanvasTexture(shadowCanvas), transparent:true, depthWrite:false }));
+      contact.rotation.x = -Math.PI / 2;
+      contact.position.y = 0.002;
+      scene.add(contact);
+
+      const idle = new THREE.Group();
+      scene.add(idle);
+      let dog;
+      let motion = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let phase = 0;
+      let previousTime = performance.now();
+      function updateMotionLabel() {
+        motionButton.setAttribute('aria-pressed', String(motion));
+        document.getElementById('motion-label').textContent = motion ? 'Pause motion' : 'Play motion';
+        document.getElementById('motion-icon').innerHTML = motion
+          ? '<path d="M4 3h2v10H4zM10 3h2v10h-2z"/>' : '<path d="m5 2 9 6-9 6z"/>';
+      }
+      updateMotionLabel();
+      motionButton.addEventListener('click', () => { motion = !motion; updateMotionLabel(); });
+
+      function homeView() {
+        const distance = Math.max(6.8, 5.7 / camera.aspect);
+        const direction = new THREE.Vector3(4.0, 2.1, 6.7).normalize();
+        controls.target.set(0, 1.36, 0);
+        camera.position.copy(controls.target).addScaledVector(direction, distance);
+        controls.update();
+        controls.saveState();
+      }
+      resetButton.addEventListener('click', () => {
+        controls.reset();
+        phase = 0;
+        idle.position.y = idle.rotation.y = 0;
+      });
+      let previousWidth = 0;
+      function resize() {
+        const width = stage.clientWidth;
+        const height = stage.clientHeight;
+        if (!width || !height) return;
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        if (Math.abs(width - previousWidth) > 40 || !previousWidth) homeView();
+        previousWidth = width;
+      }
+      new ResizeObserver(resize).observe(stage);
+      resize();
+      renderer.setAnimationLoop(time => {
+        const dt = Math.min((time - previousTime) / 1000, 0.05);
+        previousTime = time;
+        if (dog && motion && !document.hidden) {
+          phase += dt;
+          idle.position.y = (Math.sin(phase * 1.5) + 1) * 0.006;
+          idle.rotation.y = Math.sin(phase * 0.22) * 0.16;
+        }
+        controls.update();
+        renderer.render(scene, camera);
+      });
+
+      const gltf = await new GLTFLoader().loadAsync('./schnauzer.glb', event => {
+        if (event.total) status.textContent = `Getting Otto ready… ${Math.round(event.loaded / event.total * 100)}%`;
+      });
+      dog = gltf.scene;
+      dog.name = 'Otto';
+      const bounds = new THREE.Box3().setFromObject(dog);
+      const center = bounds.getCenter(new THREE.Vector3());
+      dog.position.set(-center.x, -bounds.min.y + 0.012, -center.z);
+      dog.traverse(object => {
+        if (object.isMesh) object.castShadow = object.receiveShadow = true;
+      });
+      idle.add(dog);
+      
+      status.hidden = true;
+      document.body.dataset.state = 'ready';
+      motionButton.disabled = resetButton.disabled = false;
+    } catch (error) {
+      showError(error);
+    }
+  </script>
+</body>
+</html>
